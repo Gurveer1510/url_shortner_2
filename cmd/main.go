@@ -1,17 +1,34 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/Gurveer1510/urlshortner/internal/config"
+	"github.com/Gurveer1510/urlshortner/internal/db"
 	"github.com/Gurveer1510/urlshortner/internal/handlers"
-	"github.com/Gurveer1510/urlshortner/internal/store"
+	"github.com/Gurveer1510/urlshortner/internal/persistance"
 	"github.com/Gurveer1510/urlshortner/internal/usecase"
 )
 
 func main() {
-	s := store.NewInMemory()
-	uc := usecase.NewUseCase(s)
+	conf, err := config.LoadConfig()
+	fmt.Println(conf)
+	if err != nil {
+		log.Println("ERROR in loading config file:", err.Error())
+		return
+	}
+	dsn := db.DSN(conf)
+	pool, err := db.NewPool(context.Background(), dsn)
+	if err != nil {
+		log.Println("ERROR in creating pool:", err.Error())
+		return
+	}
+	p := persistance.NewPersistance(pool)
+	// s := store.NewInMemory()
+	uc := usecase.NewUseCase(p)
 	h := handlers.NewHandler(uc, "http://localhost:8080")
 
 	mux := http.NewServeMux()
