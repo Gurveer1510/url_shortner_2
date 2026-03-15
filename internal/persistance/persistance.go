@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/Gurveer1510/urlshortner/internal/db"
+	"github.com/Gurveer1510/urlshortner/internal/store"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -32,7 +33,7 @@ func (p *Persistance) Get(code string) (string, error) {
 	err := p.db.Pool.QueryRow(context.Background(), query, code).Scan(&url)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return  "", pgx.ErrNoRows
+		return  "", store.ErrNotFound
 	}
 
 	return url, nil
