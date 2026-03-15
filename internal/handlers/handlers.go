@@ -11,7 +11,7 @@ import (
 
 type Handlers struct {
 	usecase *usecase.Usecase
-	baseUrl	string
+	baseUrl string
 }
 
 func NewHandler(uc *usecase.Usecase, baseUrl string) *Handlers {
@@ -23,7 +23,8 @@ func NewHandler(uc *usecase.Usecase, baseUrl string) *Handlers {
 
 func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Url string `json:"url"`
+		Url  string `json:"url"`
+		Code string `json:"code"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Url == "" {
@@ -31,20 +32,33 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code, err := h.usecase.Shorten(body.Url)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(rw, "internal server error", http.StatusInternalServerError)
-		return
+	if body.Code == "" {
+		code, err := h.usecase.Shorten(body.Url, "")
+		if err != nil {
+			fmt.Println(err)
+			http.Error(rw, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(rw).Encode(map[string]string{
+			"short_url": h.baseUrl + "/" + code,
+		})
+	} else {
+		code, err := h.usecase.Shorten(body.Url, body.Code)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		json.NewEncoder(rw).Encode(map[string]string{
+			"short_url": h.baseUrl + "/" + code,
+		})
 	}
 
-	json.NewEncoder(rw).Encode(map[string]string{
-		"short_url" : h.baseUrl+"/"+code,
-	})
 }
 
 func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
-	code := strings.TrimPrefix(r.URL.Path,"/")
+	code := strings.TrimPrefix(r.URL.Path, "/")
 	url, err := h.usecase.Get(code)
 	if err != nil {
 		http.Error(rw, "not found", http.StatusNotFound)

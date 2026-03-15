@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Gurveer1510/urlshortner/internal/store"
 	"github.com/Gurveer1510/urlshortner/internal/utils"
@@ -15,7 +16,14 @@ func NewUseCase(urlStore store.Store) *Usecase {
 	return &Usecase{UrlStore: urlStore}
 }
 
-func (uc *Usecase) Shorten(url string) (string, error) {
+func (uc *Usecase) Shorten(url string, code string ) (string, error) {
+	if code != "" {
+		err := uc.UrlStore.Save(code, url)
+		if errors.Is(err, store.ErrConflict) {
+			return "", fmt.Errorf("This code is already in use")
+		}
+		return code, nil
+	}
 	for range 5 {
 		code, err := utils.Generate(url)
 		if err != nil {
@@ -23,7 +31,7 @@ func (uc *Usecase) Shorten(url string) (string, error) {
 		}
 		err = uc.UrlStore.Save(code, url)
 		if err == nil {
-			return "", err
+			return code, err
 		}
 		
 		if !errors.Is(err, store.ErrConflict) {
