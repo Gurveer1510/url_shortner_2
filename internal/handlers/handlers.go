@@ -38,14 +38,16 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(rw).Encode(map[string]string{
 			"error": "invalid URL string",
 		})
+		return
 	}
 
-	code, err := h.usecase.Shorten(body)
+	code, err := h.usecase.Shorten(r.Context(), body)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(map[string]string{
 		"short_url": h.baseUrl + "/" + code,
 	})
@@ -54,7 +56,7 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 	code := strings.TrimPrefix(r.URL.Path, "/")
 	ip := GetIP(r)
-	url, err := h.usecase.Get(ip, code)
+	url, err := h.usecase.Get(r.Context(), ip, code)
 	if err != nil  {
 		if errors.Is(err, store.ErrNotFound) {
 			http.Error(rw, err.Error(), http.StatusNotFound)
@@ -64,7 +66,10 @@ func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	rw.Header().Set("Content-Type", "application/json")
 	http.Redirect(rw, r, url, http.StatusFound)
 }
 

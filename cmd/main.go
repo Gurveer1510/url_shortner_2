@@ -8,7 +8,7 @@ import (
 	"github.com/Gurveer1510/urlshortner/internal/config"
 	"github.com/Gurveer1510/urlshortner/internal/db"
 	"github.com/Gurveer1510/urlshortner/internal/handlers"
-	"github.com/Gurveer1510/urlshortner/internal/persistance"
+	"github.com/Gurveer1510/urlshortner/internal/persistence"
 	"github.com/Gurveer1510/urlshortner/internal/usecase"
 )
 
@@ -25,7 +25,7 @@ func main() {
 		log.Println("ERROR in creating pool:", err.Error())
 		return
 	}
-	p := persistance.NewPersistance(pool)
+	p := persistence.NewPersistence(pool)
 	// s := store.NewInMemory()
 	uc := usecase.NewUseCase(p)
 	h := handlers.NewHandler(uc, "http://localhost:8080")

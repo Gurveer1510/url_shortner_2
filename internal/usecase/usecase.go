@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -19,9 +20,9 @@ func NewUseCase(urlStore store.Store) *Usecase {
 	return &Usecase{UrlStore: urlStore}
 }
 
-func (uc *Usecase) Shorten(urlReq urltype.UrlReq) (string, error) {
+func (uc *Usecase) Shorten(ctx context.Context, urlReq urltype.UrlReq) (string, error) {
 	if urlReq.Code != "" {
-		err := uc.UrlStore.Save(urlReq)
+		err := uc.UrlStore.Save(ctx, urlReq)
 		if errors.Is(err, store.ErrConflict) {
 			return "", fmt.Errorf("This code is already in use")
 		}
@@ -37,7 +38,7 @@ func (uc *Usecase) Shorten(urlReq urltype.UrlReq) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		err = uc.UrlStore.Save(newUrl)
+		err = uc.UrlStore.Save(ctx, newUrl)
 		if err == nil {
 			return code, err
 		}
@@ -49,11 +50,13 @@ func (uc *Usecase) Shorten(urlReq urltype.UrlReq) (string, error) {
 	return "", errors.New("failed to genrate unique code after retries")
 }
 
-func (uc *Usecase) Get(ipAddress, code string) (string, error) {
-	shortUrl, err := uc.UrlStore.Get(code)
-	if err != nil && errors.Is(err, store.ErrNotFound) {
-		log.Println(err)
-		return "", store.ErrNotFound
+func (uc *Usecase) Get(ctx context.Context,ipAddress, code string) (string, error) {
+	shortUrl, err := uc.UrlStore.Get(ctx, code)
+	if err != nil  {
+		if errors.Is(err, store.ErrNotFound) {
+			return "", store.ErrNotFound
+		}
+		return "", err
 	}
 
 	if shortUrl.ExpiresAt != nil {
@@ -62,7 +65,7 @@ func (uc *Usecase) Get(ipAddress, code string) (string, error) {
 		}
 	}
 
-	err = uc.UrlStore.SaveClick(ipAddress, code)
+	err = uc.UrlStore.SaveClick(ctx, ipAddress, code)
 	if err != nil {
 		log.Println("Error in usecase from SaveClick(): %w", err)
 	}

@@ -1,4 +1,4 @@
-package persistance
+package persistence
 
 import (
 	"context"
@@ -12,20 +12,20 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type Persistance struct {
+type Persistence struct {
 	db *db.DB
 }
 
-func NewPersistance(db *db.DB) *Persistance {
-	return &Persistance{db: db}
+func NewPersistence(db *db.DB) *Persistence {
+	return &Persistence{db: db}
 }
 
-func (p *Persistance) Save(urlReq urltype.UrlReq) error {
+func (p *Persistence) Save(ctx context.Context, urlReq urltype.UrlReq) error {
 	// log.Println("IN PERSISTENC:", urlReq)
 	query := `
 		INSERT INTO links (code, url, expires_at) VALUES ($1, $2, $3) 
 	`
-	_, err := p.db.Pool.Exec(context.Background(), query, urlReq.Code, urlReq.Url, urlReq.ExpiresAt)
+	_, err := p.db.Pool.Exec(ctx, query, urlReq.Code, urlReq.Url, urlReq.ExpiresAt)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -40,12 +40,12 @@ func (p *Persistance) Save(urlReq urltype.UrlReq) error {
 	return nil
 }
 
-func (p *Persistance) Get(code string) (*urltype.UrlReq, error) {
+func (p *Persistence) Get(ctx context.Context, code string) (*urltype.UrlReq, error) {
 	var shortUrl urltype.UrlReq
 	query := `
-		UPDATE links SET clicks=clicks+1 WHERE code=$1 RETURNING url, code, expires_at
+		UPDATE links SET clicks=clicks+1 WHERE code=$1 AND (expires_at IS NULL OR expires_at > NOW()) RETURNING url, code, expires_at
 	`
-	err := p.db.Pool.QueryRow(context.Background(), query, code).Scan(&shortUrl.Url, &shortUrl.Code, &shortUrl.ExpiresAt)
+	err := p.db.Pool.QueryRow(ctx, query, code).Scan(&shortUrl.Url, &shortUrl.Code, &shortUrl.ExpiresAt)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -61,12 +61,12 @@ func (p *Persistance) Get(code string) (*urltype.UrlReq, error) {
 	return &shortUrl, nil
 }
 
-func (p *Persistance) SaveClick(ipAddress, code string) error {
+func (p *Persistence) SaveClick(ctx context.Context, ipAddress, code string) error {
 
 	query := `
 		INSERT INTO url_clicks (code, ip_address) VALUES ($1, $2)
 	`
-	_, err := p.db.Pool.Exec(context.Background(), query, code, ipAddress)
+	_, err := p.db.Pool.Exec(ctx, query, code, ipAddress)
 	if err != nil {
 		return err
 	}
