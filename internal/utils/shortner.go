@@ -8,7 +8,7 @@ import (
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const codeLen = 7
 
-func Generate(url string) (string, error) {
+func Generate() (string, error) {
 	result := make([]byte, codeLen)
 	for i := range codeLen {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))

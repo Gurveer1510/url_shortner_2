@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 
+	"github.com/Gurveer1510/urlshortner/internal/store"
+	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
 	"github.com/Gurveer1510/urlshortner/internal/usecase"
 )
 
@@ -23,48 +26,44 @@ func NewHandler(uc *usecase.Usecase, baseUrl string) *Handlers {
 }
 
 func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Url  string `json:"url"`
-		Code string `json:"code"`
-	}
+	var body urltype.UrlReq
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Url == "" {
 		http.Error(rw, "invalid request", http.StatusBadRequest)
 		return
 	}
-
-	if body.Code == "" {
-		code, err := h.usecase.Shorten(body.Url, "")
-		if err != nil {
-			fmt.Println(err)
-			http.Error(rw, "internal server error", http.StatusInternalServerError)
-			return
-		}
-
+	// log.Println(body)
+	_, err := url.ParseRequestURI(body.Url)
+	if err != nil {
 		json.NewEncoder(rw).Encode(map[string]string{
-			"short_url": h.baseUrl + "/" + code,
-		})
-	} else {
-		code, err := h.usecase.Shorten(body.Url, body.Code)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		json.NewEncoder(rw).Encode(map[string]string{
-			"short_url": h.baseUrl + "/" + code,
+			"error": "invalid URL string",
 		})
 	}
 
+	code, err := h.usecase.Shorten(body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(rw).Encode(map[string]string{
+		"short_url": h.baseUrl + "/" + code,
+	})
 }
 
 func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 	code := strings.TrimPrefix(r.URL.Path, "/")
 	ip := GetIP(r)
 	url, err := h.usecase.Get(ip, code)
-	if err != nil {
-		http.Error(rw, "not found", http.StatusNotFound)
-		return
+	if err != nil  {
+		if errors.Is(err, store.ErrNotFound) {
+			http.Error(rw, err.Error(), http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, store.ErrExpiredCode){
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	http.Redirect(rw, r, url, http.StatusFound)
 }

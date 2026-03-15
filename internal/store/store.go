@@ -3,14 +3,17 @@ package store
 import (
 	"errors"
 	"sync"
+
+	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
 )
 
 var ErrNotFound = errors.New("short code not found")
 var ErrConflict = errors.New("Duplicate code found")
+var ErrExpiredCode = errors.New("Code is expired")
 
 type Store interface {
-	Save(code, url string) error
-	Get(code string) (string, error)
+	Save(urlReq urltype.UrlReq) error
+	Get(code string) (*urltype.UrlReq, error)
 	SaveClick(ipAddress, code string) error
 }
 

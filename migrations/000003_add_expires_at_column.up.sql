@@ -1,0 +1,2 @@
+ALTER TABLE links
+ADD expires_at TIMESTAMPTZ ;
