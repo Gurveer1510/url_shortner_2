@@ -41,8 +41,12 @@ func (uc *Usecase) Shorten(url string, code string ) (string, error) {
 	return "", errors.New("failed to genrate unique code after retries")
 }
 
-func (uc *Usecase) Get(code string) (string, error) {
+func (uc *Usecase) Get(ipAddress, code string) (string, error) {
 	url, err := uc.UrlStore.Get(code)
+	if err != nil {
+		return "", err
+	}
+	err = uc.UrlStore.SaveClick(ipAddress, code)
 	if err != nil {
 		return "", err
 	}

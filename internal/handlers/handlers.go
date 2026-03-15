@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 
@@ -59,10 +60,26 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 	code := strings.TrimPrefix(r.URL.Path, "/")
-	url, err := h.usecase.Get(code)
+	ip := GetIP(r)
+	url, err := h.usecase.Get(ip, code)
 	if err != nil {
 		http.Error(rw, "not found", http.StatusNotFound)
 		return
 	}
 	http.Redirect(rw, r, url, http.StatusFound)
+}
+
+func GetIP(r *http.Request) string {
+
+	ip := r.Header.Get("X-Forwarded-For")
+
+	if ip == "" {
+		ip = r.Header.Get("X-Real-IP")
+	}
+
+	if ip == "" {
+		ip, _, _ = net.SplitHostPort(r.RemoteAddr)
+	}
+
+	return ip
 }

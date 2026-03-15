@@ -11,6 +11,7 @@ var ErrConflict = errors.New("Duplicate code found")
 type Store interface {
 	Save(code, url string) error
 	Get(code string) (string, error)
+	SaveClick(ipAddress, code string) error
 }
 
 type InMemory struct {

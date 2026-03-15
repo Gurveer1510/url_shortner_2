@@ -43,8 +43,9 @@ func (p *Persistance) Save(code, url string) error {
 
 func (p *Persistance) Get(code string) (string, error) {
 	var url string
+	
 	query := `
-		SELECT url from links WHERE code=$1
+		UPDATE links SET clicks=clicks+1 WHERE code=$1 RETURNING url
 	`
 	err := p.db.Pool.QueryRow(context.Background(), query, code).Scan(&url)
 
@@ -60,7 +61,18 @@ func (p *Persistance) Get(code string) (string, error) {
 		// Handle other types of errors or re-wrap the original error
 		return "", fmt.Errorf("database error: %w", err)
 	}
-
 	return url, nil
+}
 
+func (p *Persistance) SaveClick(ipAddress, code string) error {
+
+	query := `
+		INSERT INTO url_clicks (code, ip_address) VALUES ($1, $2)
+	`
+	_, err := p.db.Pool.Exec(context.Background(), query, code, ipAddress)
+	if err != nil {
+		return err
+	}
+
+	return nil 
 }
