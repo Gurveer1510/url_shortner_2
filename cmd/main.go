@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -15,7 +14,7 @@ import (
 
 func main() {
 	conf, err := config.LoadConfig()
-	fmt.Println(conf)
+
 	if err != nil {
 		log.Println("ERROR in loading config file:", err.Error())
 		return
