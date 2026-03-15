@@ -1,8 +1,6 @@
 package config
 
 import (
-	"errors"
-
 	"github.com/spf13/viper"
 )
 
@@ -20,24 +18,18 @@ func LoadConfig() (*Config, error) {
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
-
-	var fileLookupError viper.ConfigFileNotFoundError
 	if err := viper.ReadInConfig(); err != nil {
-		if errors.As(err, &fileLookupError) {
-			return nil, fileLookupError
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	config := &Config{
-			DBHost:   viper.GetString("DATABASE_HOST"),
-			DBName:   viper.GetString("DATABASE_NAME"),
-			DBUser:   viper.GetString("DATABASE_USER"),
-			DBPass:   viper.GetString("DATABASE_PASSWORD"),
-			SSL:      viper.GetString("SSL"),
-			ChanBind: viper.GetString("CHANNEL_BINDING"),
-        }
+		DBHost:   viper.GetString("DATABASE_HOST"),
+		DBName:   viper.GetString("DATABASE_NAME"),
+		DBUser:   viper.GetString("DATABASE_USER"),
+		DBPass:   viper.GetString("DATABASE_PASSWORD"),
+		SSL:      viper.GetString("SSL"),
+		ChanBind: viper.GetString("CHANNEL_BINDING"),
+	}
 
-        return config, nil
+	return config, nil
 }

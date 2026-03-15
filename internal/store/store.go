@@ -6,6 +6,7 @@ import (
 )
 
 var ErrNotFound = errors.New("short code not found")
+var ErrConflict = errors.New("Duplicate code found")
 
 type Store interface {
 	Save(code, url string) error
