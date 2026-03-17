@@ -7,10 +7,10 @@ import (
 
 	"github.com/Gurveer1510/urlshortner/internal/config"
 	"github.com/Gurveer1510/urlshortner/internal/db"
-	"github.com/Gurveer1510/urlshortner/internal/handlers"
+	urlhandler "github.com/Gurveer1510/urlshortner/internal/handlers/url_handler"
 	"github.com/Gurveer1510/urlshortner/internal/middlewares"
 	"github.com/Gurveer1510/urlshortner/internal/persistence"
-	"github.com/Gurveer1510/urlshortner/internal/usecase"
+	"github.com/Gurveer1510/urlshortner/internal/usecase/urlusecase"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 	p := persistence.NewPersistence(pool)
 	// s := store.NewInMemory()
 	uc := usecase.NewUseCase(p)
-	h := handlers.NewHandler(uc, "http://localhost:8080")
+	h := urlhandler.NewHandler(uc, "http://localhost:8080")
 
 	limiter := middlewares.NewRateLimiter(5,10)
 

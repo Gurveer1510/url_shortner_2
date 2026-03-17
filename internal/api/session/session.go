@@ -31,6 +31,7 @@ func (s *SessionStore) Create(email string) (string, error) {
 	}
 
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.sessions[id] = &Session{
 		UserEmail: email,
 		CreatedAt: time.Now(),
@@ -40,9 +41,15 @@ func (s *SessionStore) Create(email string) (string, error) {
 	return id, nil
 }
 
-func (s *SessionStore) Get(id string) ( *Session, bool ){
+func (s *SessionStore) Delete(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	delete(s.sessions, id)
+}
+
+func (s *SessionStore) Get(id string) ( *Session, bool ){
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	session, ok := s.sessions[id]
 	if !ok || time.Now().After(session.ExpiresAt) {
 		return nil, false
@@ -56,7 +63,7 @@ func (s *SessionStore) cleanUpLoop() {
 		s.mu.Lock()
 		for id, session := range s.sessions {
 			if time.Now().After(session.ExpiresAt) {
-				delete(s.sessions, id)
+				s.Delete(id)
 			}
 		}
 		s.mu.Unlock()

@@ -1,4 +1,4 @@
-package handlers
+package urlhandler
 
 import (
 	"encoding/json"
@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/Gurveer1510/urlshortner/internal/apperrors"
-	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
-	"github.com/Gurveer1510/urlshortner/internal/usecase"
+	urltype "github.com/Gurveer1510/urlshortner/internal/apptypes"
+	usecase "github.com/Gurveer1510/urlshortner/internal/usecase/urlusecase"
 )
 
 type Handlers struct {

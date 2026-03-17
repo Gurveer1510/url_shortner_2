@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 
-	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
+	urltype "github.com/Gurveer1510/urlshortner/internal/apptypes"
 )
 
 type Store interface {

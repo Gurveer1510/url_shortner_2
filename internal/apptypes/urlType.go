@@ -1,4 +1,4 @@
-package urltype
+package apptypes
 
 import "time"
 

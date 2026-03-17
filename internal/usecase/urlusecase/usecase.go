@@ -9,7 +9,7 @@ import (
 
 	"github.com/Gurveer1510/urlshortner/internal/apperrors"
 	"github.com/Gurveer1510/urlshortner/internal/store"
-	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
+	urltype "github.com/Gurveer1510/urlshortner/internal/apptypes"
 	"github.com/Gurveer1510/urlshortner/internal/utils"
 )
 

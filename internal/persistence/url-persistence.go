@@ -9,7 +9,7 @@ import (
 
 	"github.com/Gurveer1510/urlshortner/internal/apperrors"
 	"github.com/Gurveer1510/urlshortner/internal/db"
-	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
+	urltype "github.com/Gurveer1510/urlshortner/internal/apptypes"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
