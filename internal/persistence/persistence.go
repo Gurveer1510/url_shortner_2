@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Gurveer1510/urlshortner/internal/apperrors"
 	"github.com/Gurveer1510/urlshortner/internal/db"
-	"github.com/Gurveer1510/urlshortner/internal/store"
 	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -33,7 +33,7 @@ func (p *Persistence) Save(ctx context.Context, urlReq urltype.UrlReq) error {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				return store.ErrConflict
+				return apperrors.ErrConflict
 			}
 		}
 		return fmt.Errorf("database error: %w", err)
@@ -45,13 +45,13 @@ func (p *Persistence) Save(ctx context.Context, urlReq urltype.UrlReq) error {
 func (p *Persistence) Get(ctx context.Context, code string) (*urltype.UrlReq, error) {
 	var shortUrl urltype.UrlReq
 	query := `
-		UPDATE links SET clicks=clicks+1 WHERE code=$1 AND (expires_at IS NULL OR expires_at > NOW()) RETURNING url, code, expires_at
+		UPDATE links SET clicks=clicks+1 WHERE code=$1 RETURNING url, code, expires_at
 	`
 	err := p.db.Pool.QueryRow(ctx, query, code).Scan(&shortUrl.Url, &shortUrl.Code, &shortUrl.ExpiresAt)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, store.ErrNotFound
+			return nil, apperrors.ErrNotFound
 		}
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -83,7 +83,7 @@ func (p *Persistence) GetStats(ctx context.Context, code string) (*urltype.Stats
 	err := p.db.Pool.QueryRow(ctx, linkQuery, code).Scan(&shortUrl.Code, &shortUrl.Url, &shortUrl.Clicks, &shortUrl.CreatedAt, &shortUrl.ExpiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, store.ErrNotFound
+			return nil, apperrors.ErrNotFound
 		}
 		return nil, err
 	}

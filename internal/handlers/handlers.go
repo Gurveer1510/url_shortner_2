@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Gurveer1510/urlshortner/internal/store"
+	"github.com/Gurveer1510/urlshortner/internal/apperrors"
 	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
 	"github.com/Gurveer1510/urlshortner/internal/usecase"
 )
@@ -58,12 +58,12 @@ func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 	code := strings.TrimPrefix(r.URL.Path, "/")
 	ip := GetIP(r)
 	url, err := h.usecase.Get(r.Context(), ip, code)
-	if err != nil  {
-		if errors.Is(err, store.ErrNotFound) {
+	if err != nil {
+		if errors.Is(err, apperrors.ErrNotFound) {
 			http.Error(rw, err.Error(), http.StatusNotFound)
 			return
 		}
-		if errors.Is(err, store.ErrExpiredCode){
+		if errors.Is(err, apperrors.ErrExpiredCode) {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
