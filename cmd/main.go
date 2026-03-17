@@ -33,6 +33,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /shorten", h.Shorten)
 	mux.HandleFunc("GET /{code}", h.Redirect)
+	mux.HandleFunc("GET /stats/{code}", h.GetStats)
 
 	log.Println("Listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))

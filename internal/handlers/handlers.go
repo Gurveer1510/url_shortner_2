@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -86,4 +87,18 @@ func GetIP(r *http.Request) string {
 	}
 
 	return ip
+}
+
+func (h *Handlers) GetStats(rw http.ResponseWriter, r *http.Request) {
+	code := r.PathValue("code")
+	log.Println(code)
+	stats, err := h.usecase.GetStats(r.Context(), code)
+	if err != nil {
+		log.Println(err)
+		http.Error(rw, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(rw).Encode(stats)
 }
