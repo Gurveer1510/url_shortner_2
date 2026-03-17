@@ -31,7 +31,7 @@ func (uc *Usecase) Shorten(ctx context.Context, urlReq urltype.UrlReq) (string, 
 	var newUrl urltype.UrlReq
 	newUrl.Url = urlReq.Url
 	newUrl.ExpiresAt = urlReq.ExpiresAt
-	
+
 	for range 5 {
 		code, err := utils.Generate()
 		newUrl.Code = code
@@ -50,9 +50,9 @@ func (uc *Usecase) Shorten(ctx context.Context, urlReq urltype.UrlReq) (string, 
 	return "", errors.New("failed to genrate unique code after retries")
 }
 
-func (uc *Usecase) Get(ctx context.Context,ipAddress, code string) (string, error) {
+func (uc *Usecase) Get(ctx context.Context, ipAddress, code string) (string, error) {
 	shortUrl, err := uc.UrlStore.Get(ctx, code)
-	if err != nil  {
+	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return "", store.ErrNotFound
 		}
@@ -71,4 +71,8 @@ func (uc *Usecase) Get(ctx context.Context,ipAddress, code string) (string, erro
 	}
 
 	return shortUrl.Url, nil
+}
+
+func (u *Usecase) GetStats(ctx context.Context, code string) (*urltype.StatsResp, error) {
+	return u.UrlStore.GetStats(ctx, code)
 }

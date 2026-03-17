@@ -2,8 +2,10 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Gurveer1510/urlshortner/internal/db"
 	"github.com/Gurveer1510/urlshortner/internal/store"
@@ -72,4 +74,48 @@ func (p *Persistence) SaveClick(ctx context.Context, ipAddress, code string) err
 	}
 
 	return nil
+}
+
+func (p *Persistence) GetStats(ctx context.Context, code string) (*urltype.StatsResp, error) {
+	// First, get the link
+	linkQuery := `SELECT code, url, clicks, created_at, expires_at FROM links WHERE code = $1`
+	var shortUrl urltype.StatsResp
+	err := p.db.Pool.QueryRow(ctx, linkQuery, code).Scan(&shortUrl.Code, &shortUrl.Url, &shortUrl.Clicks, &shortUrl.CreatedAt, &shortUrl.ExpiresAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, store.ErrNotFound
+		}
+		return nil, err
+	}
+
+	var isExpired bool
+	if shortUrl.ExpiresAt != nil {
+		isExpired = shortUrl.ExpiresAt.Before(time.Now())
+	}
+	shortUrl.IsExpired = isExpired
+
+	// Then, get the clicks
+	clicksQuery := `SELECT ip_address, created_at FROM url_clicks WHERE code = $1 ORDER BY created_at`
+	rows, err := p.db.Pool.Query(ctx, clicksQuery, code)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var ip sql.NullString
+		var createdAt time.Time
+		err := rows.Scan(&ip, &createdAt)
+		if err != nil {
+			return nil, err
+		}
+		ipAddr := ""
+		if ip.Valid {
+			ipAddr = ip.String
+		}
+		click := urltype.Click{IpAddress: ipAddr, CreatedAt: createdAt}
+		shortUrl.Data = append(shortUrl.Data, click)
+	}
+
+	return &shortUrl, nil
 }
