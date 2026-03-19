@@ -1,4 +1,4 @@
-package persistence
+package postgres
 
 import (
 	"context"
@@ -7,33 +7,31 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Gurveer1510/urlshortner/internal/apperrors"
+	"github.com/Gurveer1510/urlshortner/internal/domain"
 	"github.com/Gurveer1510/urlshortner/internal/db"
-	urltype "github.com/Gurveer1510/urlshortner/internal/urlType"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type Persistence struct {
-	db *db.DB
+type URLRepository struct {
+    db *db.DB
 }
 
-func NewPersistence(db *db.DB) *Persistence {
-	return &Persistence{db: db}
+func NewURLRepository(db *db.DB) *URLRepository {
+    return &URLRepository{db: db}
 }
 
-func (p *Persistence) Save(ctx context.Context, urlReq urltype.UrlReq) error {
-	// log.Println("IN PERSISTENC:", urlReq)
+func (p *URLRepository) Save(ctx context.Context, userId string, urlReq domain.UrlReq) error {
 	query := `
-		INSERT INTO links (code, url, expires_at) VALUES ($1, $2, $3) 
+		INSERT INTO links (code, url, expires_at, user_id) VALUES ($1, $2, $3, $4) 
 	`
-	_, err := p.db.Pool.Exec(ctx, query, urlReq.Code, urlReq.Url, urlReq.ExpiresAt)
+	_, err := p.db.Pool.Exec(ctx, query, urlReq.Code, urlReq.Url, urlReq.ExpiresAt, userId)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				return apperrors.ErrConflict
+				return domain.ErrConflict
 			}
 		}
 		return fmt.Errorf("database error: %w", err)
@@ -42,8 +40,8 @@ func (p *Persistence) Save(ctx context.Context, urlReq urltype.UrlReq) error {
 	return nil
 }
 
-func (p *Persistence) Get(ctx context.Context, code string) (*urltype.UrlReq, error) {
-	var shortUrl urltype.UrlReq
+func (p *URLRepository) Get(ctx context.Context, code string) (*domain.UrlReq, error) {
+	var shortUrl domain.UrlReq
 	query := `
 		UPDATE links SET clicks=clicks+1 WHERE code=$1 RETURNING url, code, expires_at
 	`
@@ -51,7 +49,7 @@ func (p *Persistence) Get(ctx context.Context, code string) (*urltype.UrlReq, er
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apperrors.ErrNotFound
+			return nil, domain.ErrNotFound
 		}
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -63,8 +61,7 @@ func (p *Persistence) Get(ctx context.Context, code string) (*urltype.UrlReq, er
 	return &shortUrl, nil
 }
 
-func (p *Persistence) SaveClick(ctx context.Context, ipAddress, code string) error {
-
+func (p *URLRepository) SaveClick(ctx context.Context, ipAddress, code string) error {
 	query := `
 		INSERT INTO url_clicks (code, ip_address) VALUES ($1, $2)
 	`
@@ -72,18 +69,16 @@ func (p *Persistence) SaveClick(ctx context.Context, ipAddress, code string) err
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (p *Persistence) GetStats(ctx context.Context, code string) (*urltype.StatsResp, error) {
-	// First, get the link
+func (p *URLRepository) GetStats(ctx context.Context, code string) (*domain.StatsResp, error) {
 	linkQuery := `SELECT code, url, clicks, created_at, expires_at FROM links WHERE code = $1`
-	var shortUrl urltype.StatsResp
+	var shortUrl domain.StatsResp
 	err := p.db.Pool.QueryRow(ctx, linkQuery, code).Scan(&shortUrl.Code, &shortUrl.Url, &shortUrl.Clicks, &shortUrl.CreatedAt, &shortUrl.ExpiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apperrors.ErrNotFound
+			return nil, domain.ErrNotFound
 		}
 		return nil, err
 	}
@@ -94,7 +89,6 @@ func (p *Persistence) GetStats(ctx context.Context, code string) (*urltype.Stats
 	}
 	shortUrl.IsExpired = isExpired
 
-	// Then, get the clicks
 	clicksQuery := `SELECT ip_address, created_at FROM url_clicks WHERE code = $1 ORDER BY created_at`
 	rows, err := p.db.Pool.Query(ctx, clicksQuery, code)
 	if err != nil {
@@ -113,9 +107,11 @@ func (p *Persistence) GetStats(ctx context.Context, code string) (*urltype.Stats
 		if ip.Valid {
 			ipAddr = ip.String
 		}
-		click := urltype.Click{IpAddress: ipAddr, CreatedAt: createdAt}
+		click := domain.Click{IpAddress: ipAddr, CreatedAt: createdAt}
 		shortUrl.Data = append(shortUrl.Data, click)
 	}
 
 	return &shortUrl, nil
 }
+
+// User persistence moved to user_repository.go
