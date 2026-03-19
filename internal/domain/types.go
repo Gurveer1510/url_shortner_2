@@ -1,4 +1,4 @@
-package apptypes
+package domain
 
 import "time"
 
@@ -18,9 +18,19 @@ type StatsResp struct {
 	Data      []Click    `json:"data"`
 }
 
-
-
 type Click struct {
 	IpAddress string    `json:"ip_address"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type User struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }

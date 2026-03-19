@@ -1,4 +1,4 @@
-package urlhandler
+package url
 
 import (
 	"encoding/json"
@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Gurveer1510/urlshortner/internal/apperrors"
-	urltype "github.com/Gurveer1510/urlshortner/internal/apptypes"
-	usecase "github.com/Gurveer1510/urlshortner/internal/usecase/urlusecase"
+	"github.com/Gurveer1510/urlshortner/internal/auth/session"
+	"github.com/Gurveer1510/urlshortner/internal/domain"
+	usecase "github.com/Gurveer1510/urlshortner/internal/usecase/url"
 )
 
 type Handlers struct {
@@ -27,13 +27,16 @@ func NewHandler(uc *usecase.Usecase, baseUrl string) *Handlers {
 }
 
 func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
-	var body urltype.UrlReq
-
+	var body domain.UrlReq
+	data := r.Context().Value("session").(*session.Session)
+	if data.UserId == "0" {
+		http.Error(rw, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Url == "" {
 		http.Error(rw, "invalid request", http.StatusBadRequest)
 		return
 	}
-	// log.Println(body)
 	_, err := url.ParseRequestURI(body.Url)
 	if err != nil {
 		json.NewEncoder(rw).Encode(map[string]string{
@@ -42,7 +45,7 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code, err := h.usecase.Shorten(r.Context(), body)
+	code, err := h.usecase.Shorten(r.Context(),data.UserId, body)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -57,13 +60,13 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 	code := strings.TrimPrefix(r.URL.Path, "/")
 	ip := GetIP(r)
-	url, err := h.usecase.Get(r.Context(), ip, code)
+	urlStr, err := h.usecase.Get(r.Context(), ip, code)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
+		if errors.Is(err, domain.ErrNotFound) {
 			http.Error(rw, err.Error(), http.StatusNotFound)
 			return
 		}
-		if errors.Is(err, apperrors.ErrExpiredCode) {
+		if errors.Is(err, domain.ErrExpiredCode) {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -71,11 +74,10 @@ func (h *Handlers) Redirect(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
-	http.Redirect(rw, r, url, http.StatusFound)
+	http.Redirect(rw, r, urlStr, http.StatusFound)
 }
 
 func GetIP(r *http.Request) string {
-
 	ip := r.Header.Get("X-Forwarded-For")
 
 	if ip == "" {

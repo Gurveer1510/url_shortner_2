@@ -3,11 +3,14 @@ package session
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"sync"
 	"time"
 )
 
 type Session struct {
+	UserId    string
+	Id        string
 	UserEmail string
 	CreatedAt time.Time
 	ExpiresAt time.Time
@@ -24,21 +27,23 @@ func NewSessionStore() *SessionStore {
 	return s
 }
 
-func (s *SessionStore) Create(email string) (string, error) {
+func (s *SessionStore) Create(userId, email string) (*Session, error) {
 	id, err := generateSessionID()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.sessions[id] = &Session{
+		UserId:    userId,
+		Id:        id,
 		UserEmail: email,
 		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().Add(7*24*time.Hour),
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
 	}
 
-	return id, nil
+	return s.sessions[id], nil
 }
 
 func (s *SessionStore) Delete(id string) {
@@ -47,7 +52,8 @@ func (s *SessionStore) Delete(id string) {
 	delete(s.sessions, id)
 }
 
-func (s *SessionStore) Get(id string) ( *Session, bool ){
+func (s *SessionStore) Get(id string) (*Session, bool) {
+	log.Println(id)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	session, ok := s.sessions[id]

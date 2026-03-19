@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Gurveer1510/urlshortner/internal/api/session"
+	"github.com/Gurveer1510/urlshortner/internal/auth/session"
 )
 
 type Auth struct {
@@ -18,8 +18,10 @@ func NewAuth(s *session.SessionStore) *Auth {
 }
 
 func (a *Auth) AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request){
-		cookie, err := r.Cookie("session_id")
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("cookie")
+		// userCookie, err := r.Cookie("user-id")
+		// log.Println(cookie.Value)
 		if err != nil {
 			http.Error(rw, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -28,7 +30,7 @@ func (a *Auth) AuthMiddleware(next http.Handler) http.Handler {
 		session, ok := a.store.Get(cookie.Value)
 		if !ok {
 			http.Error(rw, "Unauthorized", http.StatusUnauthorized)
-			return 
+			return
 		}
 
 		ctx := context.WithValue(r.Context(), "session", session)
