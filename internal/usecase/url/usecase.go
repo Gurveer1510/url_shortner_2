@@ -69,7 +69,7 @@ func (uc *Usecase) Get(ctx context.Context, ipAddress, code string) (string, err
 
 	err = uc.UrlStore.SaveClick(ctx, ipAddress, code)
 	if err != nil {
-		log.Printf("Error in usecase from SaveClick(): %w", err)
+		log.Printf("Error in usecase from SaveClick(): `%v`", err)
 	}
 
 	return shortUrl.Url, nil

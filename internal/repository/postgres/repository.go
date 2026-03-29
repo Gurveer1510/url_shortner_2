@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
-	"github.com/Gurveer1510/urlshortner/internal/domain"
 	"github.com/Gurveer1510/urlshortner/internal/db"
+	"github.com/Gurveer1510/urlshortner/internal/domain"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -40,10 +41,11 @@ func (p *URLRepository) Save(ctx context.Context, userId string, urlReq domain.U
 	return nil
 }
 
-func (p *URLRepository) Get(ctx context.Context, code string) (*domain.UrlReq, error) {
-	var shortUrl domain.UrlReq
+func (p *URLRepository) Get(ctx context.Context, code string) (*domain.Link, error) {
+	log.Println("GOT HERE INSTEAD OF REDIS")
+	var shortUrl domain.Link
 	query := `
-		UPDATE links SET clicks=clicks+1 WHERE code=$1 RETURNING url, code, expires_at
+		SELECT url, code, expires_at FROM links WHERE code = $1
 	`
 	err := p.db.Pool.QueryRow(ctx, query, code).Scan(&shortUrl.Url, &shortUrl.Code, &shortUrl.ExpiresAt)
 
@@ -66,6 +68,13 @@ func (p *URLRepository) SaveClick(ctx context.Context, ipAddress, code string) e
 		INSERT INTO url_clicks (code, ip_address) VALUES ($1, $2)
 	`
 	_, err := p.db.Pool.Exec(ctx, query, code, ipAddress)
+	if err != nil {
+		return err
+	}
+	bumpCount := `
+		UPDATE links SET clicks=clicks+1 WHERE code=$1
+	`
+	_, err = p.db.Pool.Exec(ctx, bumpCount, code)
 	if err != nil {
 		return err
 	}

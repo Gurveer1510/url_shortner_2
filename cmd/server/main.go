@@ -6,12 +6,14 @@ import (
 	"net/http"
 
 	"github.com/Gurveer1510/urlshortner/internal/auth/session"
+	"github.com/Gurveer1510/urlshortner/internal/cachehandler"
 	"github.com/Gurveer1510/urlshortner/internal/config"
 	"github.com/Gurveer1510/urlshortner/internal/db"
 	urlhandler "github.com/Gurveer1510/urlshortner/internal/http/handlers/url"
 	"github.com/Gurveer1510/urlshortner/internal/http/handlers/user"
 	"github.com/Gurveer1510/urlshortner/internal/http/middleware"
 	"github.com/Gurveer1510/urlshortner/internal/http/middleware/auth"
+	"github.com/Gurveer1510/urlshortner/internal/repository/cache"
 	"github.com/Gurveer1510/urlshortner/internal/repository/postgres"
 	usecase "github.com/Gurveer1510/urlshortner/internal/usecase/url"
 	userusecase "github.com/Gurveer1510/urlshortner/internal/usecase/user"
@@ -31,20 +33,23 @@ func main() {
 		return
 	}
 
-	sessStore := session.NewSessionStore()
+	redisClient, err := cachehandler.NewRedisClient(conf.RedisAddr)
+	// sessStore := session.NewSessionStore()
+	sessStore := session.NewRedisSessionStore(redisClient)
 	authMiddleware := auth.NewAuth(sessStore)
 
 	urlRepo := postgres.NewURLRepository(pool)
+	cachedRepo := cache.NewCachedURLRepository(urlRepo, redisClient)
 	userRepo := postgres.NewUserRepository(pool)
 
-	uc := usecase.NewUseCase(urlRepo)
+	uc := usecase.NewUseCase(cachedRepo)
 	userUsecase := userusecase.NewUserUsecase(userRepo)
 
 	baseURL := conf.BaseURL
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
 	}
-	
+
 	h := urlhandler.NewHandler(uc, baseURL)
 	uh := user.NewUserHandler(sessStore, userUsecase)
 

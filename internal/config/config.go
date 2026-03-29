@@ -5,13 +5,14 @@ import (
 )
 
 type Config struct {
-    DBHost   string
-    DBName   string
-    DBUser   string
-    DBPass   string
-    SSL      string
-    ChanBind string
-    BaseURL  string
+	DBHost    string
+	DBName    string
+	DBUser    string
+	DBPass    string
+	SSL       string
+	ChanBind  string
+	BaseURL   string
+	RedisAddr string
 }
 
 func LoadConfig() (*Config, error) {
@@ -23,15 +24,16 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
-    config := &Config{
-        DBHost:   viper.GetString("DATABASE_HOST"),
-        DBName:   viper.GetString("DATABASE_NAME"),
-        DBUser:   viper.GetString("DATABASE_USER"),
-        DBPass:   viper.GetString("DATABASE_PASSWORD"),
-        SSL:      viper.GetString("SSL"),
-        ChanBind: viper.GetString("CHANNEL_BINDING"),
-        BaseURL:  viper.GetString("BASE_URL"),
-    }
+	config := &Config{
+		DBHost:   viper.GetString("DATABASE_HOST"),
+		DBName:   viper.GetString("DATABASE_NAME"),
+		DBUser:   viper.GetString("DATABASE_USER"),
+		DBPass:   viper.GetString("DATABASE_PASSWORD"),
+		SSL:      viper.GetString("SSL"),
+		ChanBind: viper.GetString("CHANNEL_BINDING"),
+		BaseURL:  viper.GetString("BASE_URL"),
+        RedisAddr: viper.GetString("REDIS_ADDR"),
+	}
 
-    return config, nil
+	return config, nil
 }
