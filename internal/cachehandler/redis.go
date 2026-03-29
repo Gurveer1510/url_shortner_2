@@ -12,10 +12,12 @@ type RedisClient struct {
 }
 
 func NewRedisClient(addr string) (*RedisClient, error) {
-	rdb := redis.NewClient(&redis.Options{Addr: addr})
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		return nil, err
-	}
+	opt, err := redis.ParseURL(addr) // handles rediss:// with TLS
+    if err != nil {
+        // fallback for plain addr format
+        opt = &redis.Options{Addr: addr}
+    }
+    rdb := redis.NewClient(opt)
 
 	return &RedisClient{
 		client: rdb,
