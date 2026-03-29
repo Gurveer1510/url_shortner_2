@@ -30,6 +30,7 @@ func (h *Handlers) Shorten(rw http.ResponseWriter, r *http.Request) {
 	var body domain.UrlReq
 	data := r.Context().Value("session").(*session.Session)
 	if data.UserId == "0" {
+		log.Println("IN HANDLERS")
 		http.Error(rw, "Unauthorized", http.StatusUnauthorized)
 		return
 	}

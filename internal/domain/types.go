@@ -8,6 +8,12 @@ type UrlReq struct {
 	ExpiresAt *time.Time `json:"expires_at"`
 }
 
+type Link struct {
+	Code      string
+	Url       string
+	ExpiresAt *time.Time
+}
+
 type StatsResp struct {
 	Code      string     `json:"code"`
 	Url       string     `json:"url"`

@@ -11,11 +11,11 @@ import (
 )
 
 type UserHandler struct {
-	sessionStore *session.SessionStore
+	sessionStore session.Store
 	userUsecase  *userusecase.UserUsecase
 }
 
-func NewUserHandler(sessionStore *session.SessionStore, userUsecase *userusecase.UserUsecase) *UserHandler {
+func NewUserHandler(sessionStore session.Store, userUsecase *userusecase.UserUsecase) *UserHandler {
 	return &UserHandler{
 		sessionStore: sessionStore,
 		userUsecase:  userUsecase,
@@ -59,8 +59,8 @@ func (uh *UserHandler) CreateUserHandler(rw http.ResponseWriter, r *http.Request
 		SameSite: http.SameSiteLaxMode,
 	}
 	userId := http.Cookie{
-		Name:     "user-id",
-		Value:    id,
+		Name:  "user-id",
+		Value: id,
 	}
 	http.SetCookie(rw, &c)
 	http.SetCookie(rw, &userId)
@@ -106,9 +106,9 @@ func (uh *UserHandler) LoginHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	userId := http.Cookie{
-		Name:     "user-id",
-		Value:    id,
+		Name:  "user-id",
+		Value: id,
 	}
 	http.SetCookie(rw, &c)
 	http.SetCookie(rw, &userId)
-} 
+}
