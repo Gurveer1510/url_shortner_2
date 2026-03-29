@@ -45,7 +45,7 @@ func (uc *Usecase) Shorten(ctx context.Context, userId string, urlReq domain.Url
 			return code, err
 		}
 
-		if !errors.Is(err, domain.ErrNotFound) {
+		if !errors.Is(err, domain.ErrConflict) {
 			return "", err
 		}
 	}
